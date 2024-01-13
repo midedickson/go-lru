@@ -1,9 +1,7 @@
 package main
 
-import "fmt"
-
 type Node[V comparable] struct {
-	Value interface{}
+	Value V
 	Next  *Node[V]
 	Prev  *Node[V]
 }
@@ -39,39 +37,37 @@ func (r *LRUCache[K, V]) Init(capacity int) {
 }
 
 func (r *LRUCache[K, V]) Update(key K, value V) {
-	//does it exist?
+	// Check if the key already exists
 	node, ok := r.lookup[key]
+
 	if !ok {
-		// if not found, return None
+		// If not found, create a new node
 		node = newNode(value)
 		r.prepend(node)
-		r.length = r.length + 1
+		r.length++
 		r.trimCache()
 		r.lookup[key] = node
 		r.reverseLookup[node] = key
 	} else {
+		// If the key exists, move the node to the front and update the value
 		r.detach(node)
 		r.prepend(node)
 		node.Value = value
 	}
-	//  if it doesn't, we need to insert it
-	//     - check capacity and evict lru entries
-	//if it does, we need to update to the front of the list
-	//and udate the value
 }
 
-func (r *LRUCache[K, V]) Get(key K) interface{} {
+func (r *LRUCache[K, V]) Get(key K) (value V) {
 	// check the cache for existence
 	node, ok := r.lookup[key]
 	if !ok {
-		// if not found, return None
-		return nil
+		// if not found, return zero-value of V
+		return
 	}
 	// update the value we found and move it to the front
 	r.detach(node)
 	r.prepend(node)
-	return node.Value
-
+	value = node.Value
+	return
 }
 
 func (r *LRUCache[K, V]) trimCache() {
@@ -84,7 +80,7 @@ func (r *LRUCache[K, V]) trimCache() {
 	key := r.reverseLookup[tail]
 	delete(r.lookup, key)
 	delete(r.reverseLookup, tail)
-	r.length = r.length - 1
+	r.length--
 
 }
 
@@ -114,15 +110,4 @@ func (r *LRUCache[K, V]) prepend(node *Node[V]) {
 	node.Next = r.head
 	r.head.Prev = node
 	r.head = node
-}
-
-func main() {
-	lru := newLRUCache(3)
-	fmt.Printf("Current Length: %d\n", lru.length)
-
-	lru.Update("key1", 1)
-	lru.Update("key2", 2)
-	lru.Update("key3", 3)
-	fmt.Printf("Current Length: %d\n", lru.length)
-
 }
